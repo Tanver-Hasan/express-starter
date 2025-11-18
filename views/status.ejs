@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %> · Express Starter Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      :root {
+        --bg: #0f172a;
+        --bg-card: #0b1220;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.12);
+        --text: #e5e7eb;
+        --text-muted: #9ca3af;
+        --border: rgba(148, 163, 184, 0.25);
+        --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.75);
+        --radius-xl: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1d283a 0, #020617 55%);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .nav {
+        display: flex;
+        justify-content: center;
+        padding: 16px 24px;
+      }
+
+      .nav-inner {
+        width: 100%;
+        max-width: 1040px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .nav-logo-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        border: 1px solid var(--accent-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: var(--accent);
+        background: radial-gradient(circle at 30% 0, #0ea5e9 0, #020617 55%);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 18px;
+        font-size: 0.9rem;
+      }
+
+      .nav-links a {
+        color: var(--text-muted);
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        transition: all 0.18s ease-out;
+      }
+
+      .nav-links a:hover {
+        color: var(--text);
+        border-color: var(--border);
+        background: rgba(15, 23, 42, 0.8);
+      }
+
+      .nav-links a.primary {
+        color: var(--accent);
+        border-color: var(--accent-soft);
+        background: rgba(15, 23, 42, 0.9);
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        padding: 12px 16px 32px;
+      }
+
+      .shell {
+        width: 100%;
+        max-width: 1040px;
+        display: grid;
+        grid-template-columns: minmax(0, 3fr);
+        margin-top: 10px;
+      }
+
+      @media (min-width: 900px) {
+        .shell {
+          grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+          gap: 32px;
+          align-items: stretch;
+        }
+      }
+
+      .card {
+        background: linear-gradient(
+            to bottom right,
+            rgba(15, 23, 42, 0.88),
+            rgba(15, 23, 42, 0.98)
+          );
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-soft);
+        padding: 28px 26px 24px;
+      }
+
+      .card-header-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--accent-soft);
+        background: radial-gradient(circle at top left, #0ea5e9 0, #020617 65%);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #e0f2fe;
+      }
+
+      .card-header-kicker-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.32);
+      }
+
+      h1 {
+        margin: 18px 0 8px;
+        font-size: clamp(1.9rem, 2.7vw, 2.4rem);
+        letter-spacing: 0.02em;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 0.98rem;
+        color: var(--text-muted);
+        max-width: 42rem;
+      }
+
+      .metrics-grid {
+        display: grid;
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      @media (min-width: 768px) {
+        .metrics-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      .metric-card {
+        border-radius: 14px;
+        border: 1px solid rgba(51, 65, 85, 0.85);
+        background: radial-gradient(
+          circle at top left,
+          rgba(56, 189, 248, 0.16),
+          rgba(15, 23, 42, 1)
+        );
+        padding: 12px 14px;
+      }
+
+      .metric-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #bae6fd;
+        margin-bottom: 4px;
+      }
+
+      .metric-value {
+        font-size: 1.05rem;
+        font-weight: 500;
+      }
+
+      .metric-detail {
+        margin-top: 3px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .hint-line {
+        margin-top: 18px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .hint-line code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 0.78rem;
+        background: #020617;
+        padding: 3px 6px;
+        border-radius: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+
+      .card-secondary h2 {
+        margin: 0 0 12px;
+        font-size: 1.05rem;
+      }
+
+      .log-hint {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      footer {
+        text-align: center;
+        padding: 10px 0 16px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-inner">
+        <div class="nav-logo">
+          <div class="nav-logo-badge">ZT</div>
+          <span>Zero-Trust Lab · Express Starter</span>
+        </div>
+        <nav class="nav-links">
+          <a href="/">Home</a>
+          <a href="/about">About</a>
+          <a href="/status" class="primary">Status</a>
+          <a href="/api/health">Health API</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="shell">
+        <section class="card">
+          <div class="card-header-kicker">
+            <span class="card-header-kicker-dot"></span>
+            Runtime · Live application status
+          </div>
+
+          <h1>Application Status</h1>
+
+          <p class="subtitle">
+            This page shows live runtime information for the Express app running
+            on EC2, including uptime, Node.js version, environment, and
+            timestamp. Useful for quick smoke checks.
+          </p>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">Uptime</div>
+              <div class="metric-value">
+                <%= uptimeSeconds.toFixed(0) %> seconds
+              </div>
+              <div class="metric-detail">
+                Time since the Node.js process started.
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Node.js Version</div>
+              <div class="metric-value"><%= nodeVersion %></div>
+              <div class="metric-detail">
+                Ensure this matches the version you expect (e.g. Node 20.x).
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Environment</div>
+              <div class="metric-value"><%= environment %></div>
+              <div class="metric-detail">
+                Typically <code>production</code> on EC2, or
+                <code>development</code> locally.
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Timestamp (UTC)</div>
+              <div class="metric-value" style="font-size: 0.9rem;">
+                <%= timestamp %>
+              </div>
+              <div class="metric-detail">
+                ISO 8601 timestamp generated on each request.
+              </div>
+            </div>
+          </div>
+
+          <p class="hint-line">
+            For a JSON-friendly health check, use
+            <code>/api/health</code>. This status view is meant for humans, not
+            machines.
+          </p>
+        </section>
+
+        <aside class="card card-secondary">
+          <h2>Operational hints</h2>
+          <p class="log-hint">
+            On the EC2 instance, you can inspect logs and service health using:
+          </p>
+          <p class="log-hint">
+            <code>sudo systemctl status express-starter</code><br />
+            <code>sudo journalctl -u express-starter -n 50 --no-pager</code>
+          </p>
+          <p class="log-hint">
+            If you’re debugging Cloudflare Tunnel behaviour:
+          </p>
+          <p class="log-hint">
+            <code>sudo systemctl status cloudflared</code><br />
+            <code>sudo journalctl -u cloudflared -n 50 --no-pager</code>
+          </p>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      Express Starter · Zero-Trust Lab · Powered by Node.js, AWS & Cloudflare
+    </footer>
+  </body>
+</html>

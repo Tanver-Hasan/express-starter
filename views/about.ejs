@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %> · Express Starter Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      :root {
+        --bg: #0f172a;
+        --bg-card: #0b1220;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.12);
+        --text: #e5e7eb;
+        --text-muted: #9ca3af;
+        --border: rgba(148, 163, 184, 0.25);
+        --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.75);
+        --radius-xl: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1d283a 0, #020617 55%);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .nav {
+        display: flex;
+        justify-content: center;
+        padding: 16px 24px;
+      }
+
+      .nav-inner {
+        width: 100%;
+        max-width: 1040px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .nav-logo-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        border: 1px solid var(--accent-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: var(--accent);
+        background: radial-gradient(circle at 30% 0, #0ea5e9 0, #020617 55%);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 18px;
+        font-size: 0.9rem;
+      }
+
+      .nav-links a {
+        color: var(--text-muted);
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        transition: all 0.18s ease-out;
+      }
+
+      .nav-links a:hover {
+        color: var(--text);
+        border-color: var(--border);
+        background: rgba(15, 23, 42, 0.8);
+      }
+
+      .nav-links a.primary {
+        color: var(--accent);
+        border-color: var(--accent-soft);
+        background: rgba(15, 23, 42, 0.9);
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        padding: 12px 16px 32px;
+      }
+
+      .shell {
+        width: 100%;
+        max-width: 1040px;
+        display: grid;
+        grid-template-columns: minmax(0, 3fr);
+        margin-top: 10px;
+      }
+
+      @media (min-width: 900px) {
+        .shell {
+          grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+          gap: 32px;
+          align-items: stretch;
+        }
+      }
+
+      .card {
+        background: linear-gradient(
+            to bottom right,
+            rgba(15, 23, 42, 0.88),
+            rgba(15, 23, 42, 0.98)
+          );
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-soft);
+        padding: 28px 26px 24px;
+      }
+
+      .card-header-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--accent-soft);
+        background: radial-gradient(circle at top left, #0ea5e9 0, #020617 65%);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #e0f2fe;
+      }
+
+      .card-header-kicker-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.32);
+      }
+
+      h1 {
+        margin: 18px 0 8px;
+        font-size: clamp(1.9rem, 2.7vw, 2.4rem);
+        letter-spacing: 0.02em;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 0.98rem;
+        color: var(--text-muted);
+        max-width: 42rem;
+      }
+
+      .section-title {
+        margin-top: 24px;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #bae6fd;
+      }
+
+      .section-body {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      .section-body p {
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+
+      .stack-list {
+        list-style: none;
+        padding: 0;
+        margin: 18px 0 0;
+        display: grid;
+        gap: 12px;
+        font-size: 0.86rem;
+      }
+
+      .stack-item {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(51, 65, 85, 0.85);
+        background: radial-gradient(
+          circle at top left,
+          rgba(56, 189, 248, 0.14),
+          rgba(15, 23, 42, 0.98)
+        );
+      }
+
+      .stack-item-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #bae6fd;
+        margin-bottom: 4px;
+      }
+
+      .stack-item-body {
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 18px;
+        gap: 8px;
+      }
+
+      .pill {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        background: rgba(15, 23, 42, 0.85);
+      }
+
+      footer {
+        text-align: center;
+        padding: 10px 0 16px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-inner">
+        <div class="nav-logo">
+          <div class="nav-logo-badge">ZT</div>
+          <span>Zero-Trust Lab · Express Starter</span>
+        </div>
+        <nav class="nav-links">
+          <a href="/">Home</a>
+          <a href="/about" class="primary">About</a>
+          <a href="/status">Status</a>
+          <a href="/api/health">Health API</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="shell">
+        <section class="card">
+          <div class="card-header-kicker">
+            <span class="card-header-kicker-dot"></span>
+            Architecture · What this lab demonstrates
+          </div>
+
+          <h1>About this Express Starter Lab</h1>
+
+          <p class="subtitle">
+            This environment is designed as a compact playground for modern
+            application delivery: Express.js on AWS EC2, secured with
+            Cloudflare Tunnel, and fully provisioned via Terraform.
+          </p>
+
+          <div class="section-title">Goals</div>
+          <div class="section-body">
+            <p>
+              The primary purpose of this lab is to explore how traditional
+              compute (EC2) can be combined with modern Zero-Trust patterns.
+              Instead of exposing EC2 directly to the internet, all external
+              traffic is routed through Cloudflare Tunnel.
+            </p>
+            <p>
+              It also serves as a reference for:
+              infrastructure-as-code workflows, user-data bootstrapping,
+              and simple Node.js service design.
+            </p>
+          </div>
+
+          <div class="section-title">What’s included</div>
+          <ul class="stack-list">
+            <li class="stack-item">
+              <div class="stack-item-title">Express.js application</div>
+              <div class="stack-item-body">
+                A minimal but structured Express app with multiple routes and
+                EJS views (<code>/</code>, <code>/about</code>,
+                <code>/status</code>, and <code>/api/health</code>).
+              </div>
+            </li>
+            <li class="stack-item">
+              <div class="stack-item-title">AWS EC2 + user-data</div>
+              <div class="stack-item-body">
+                An Ubuntu EC2 instance that bootstraps itself on first boot:
+                installs Node.js, clones the repo, installs dependencies,
+                configures systemd services, and starts the app.
+              </div>
+            </li>
+            <li class="stack-item">
+              <div class="stack-item-title">Cloudflare Tunnel integration</div>
+              <div class="stack-item-body">
+                The instance runs <code>cloudflared</code> as a service using a
+                tunnel token injected from Terraform, enabling outbound-only
+                connectivity to Cloudflare Edge.
+              </div>
+            </li>
+            <li class="stack-item">
+              <div class="stack-item-title">Terraform-managed configuration</div>
+              <div class="stack-item-body">
+                EC2, key pair, security group, and user-data are all defined in
+                Terraform, enabling repeatable, version-controlled infrastructure
+                changes.
+              </div>
+            </li>
+          </ul>
+
+          <div class="pill-row">
+            <span class="pill">Good for: lab demos</span>
+            <span class="pill">Good for: Zero-Trust experiments</span>
+            <span class="pill">Good for: Terraform + cloud-init patterns</span>
+          </div>
+        </section>
+
+        <aside class="card">
+          <div class="section-title">Next steps</div>
+          <div class="section-body">
+            <p>
+              You can extend this lab by adding authentication at the edge via
+              Cloudflare Access, building additional API routes, or attaching a
+              database (RDS, DynamoDB, etc.).
+            </p>
+            <p>
+              It can also be adapted into a production starter for internal
+              tools or private admin dashboards.
+            </p>
+          </div>
+
+          <ul class="stack-list">
+            <li class="stack-item">
+              <div class="stack-item-title">Explore status</div>
+              <div class="stack-item-body">
+                Visit the <code>/status</code> page to see live runtime
+                information about the app, including uptime and Node.js
+                version.
+              </div>
+            </li>
+            <li class="stack-item">
+              <div class="stack-item-title">Check health API</div>
+              <div class="stack-item-body">
+                Use <code>/api/health</code> as a simple readiness endpoint for
+                upstream checks or monitoring.
+              </div>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      Express Starter · Zero-Trust Lab · Powered by Node.js, AWS & Cloudflare
+    </footer>
+  </body>
+</html>

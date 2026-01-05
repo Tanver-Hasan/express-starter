@@ -14,7 +14,7 @@ app.use(cookieParser());
 const validator = createCFAuthorizationJWTValidator({
   jwksUri: process.env.CF_JWKS_URI || 'https://thasan.cloudflareaccess.com/cdn-cgi/access/certs',
   issuer: process.env.CF_JWT_ISSUER || "https://thasan.cloudflareaccess.com",     // recommended
- // audience: process.env.CF_JWT_AUDIENCE, // recommended if you have it
+  // audience: process.env.CF_JWT_AUDIENCE, // recommended if you have it
   algorithms: ['RS256'],
   fetchTimeoutMs: 5000,
   cacheTtlMs: 10 * 60 * 1000,
@@ -68,24 +68,33 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
 app.get('/protected', validator.middleware(), (req, res) => {
   const claims = req.userClaims || {};
   const token = req.cookies?.CF_Authorization || '';
+
+  const aud = claims.aud;
+  const audience =
+    Array.isArray(aud) ? aud.join(', ') :
+      typeof aud === 'string' ? aud :
+        aud != null ? String(aud) : '—';
 
   res.render('protected', {
     title: 'Protected',
     token,
     claims,
-
-    // metrics
     subject: claims.sub || '—',
     issuer: claims.iss || '—',
-    audience: Array.isArray(claims.aud) ? claims.aud.join(', ') : (claims.aud || '—'),
+    audience,
     expiresAt: claims.exp ? new Date(claims.exp * 1000).toISOString() : '—',
     issuedAt: claims.iat ? new Date(claims.iat * 1000).toISOString() : '—',
     nowUtc: new Date().toISOString(),
+    jwksUri: req.jwksUri || '—',
+    signingKey: req.jwtSigningKey || null,
+    jwtHeader: req.jwtHeader || null,
   });
 });
+
 
 
 // 404 handler (for unknown routes)

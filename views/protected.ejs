@@ -218,7 +218,7 @@
         border: 1px solid rgba(148, 163, 184, 0.4);
       }
 
-      .card-secondary h2 { margin: 0 0 12px; font-size: 1.05rem; }
+      .card-secondary h2 { margin: 16px 0 8px; font-size: 1.05rem; }
 
       .log-hint { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
 
@@ -266,6 +266,7 @@
 
     <main>
       <div class="shell">
+        <!-- LEFT: TOKEN + METRICS -->
         <section class="card">
           <div class="card-header-kicker">
             <span class="card-header-kicker-dot"></span>
@@ -275,72 +276,68 @@
           <h1>Protected Resource</h1>
 
           <p class="subtitle">
-            You are seeing this page because the <code>CF_Authorization</code>
-            cookie was validated against JWKS using <code>jose</code>.
+            This page is rendered only after validating the
+            <code>CF_Authorization</code> token against JWKS using
+            <code>jose</code>.
           </p>
 
           <div class="metrics-grid">
             <div class="metric-card">
               <div class="metric-label">Subject (sub)</div>
               <div class="metric-value"><%= subject %></div>
-              <div class="metric-detail">Primary user identifier from the token.</div>
             </div>
 
             <div class="metric-card">
               <div class="metric-label">Issuer (iss)</div>
               <div class="metric-value"><%= issuer %></div>
-              <div class="metric-detail">Must match your configured issuer.</div>
             </div>
 
             <div class="metric-card">
               <div class="metric-label">Issued At (iat)</div>
-              <div class="metric-value" style="font-size: 0.9rem;"><%= issuedAt %></div>
-              <div class="metric-detail">When this token was minted (UTC).</div>
+              <div class="metric-value"><%= issuedAt %></div>
             </div>
 
             <div class="metric-card">
               <div class="metric-label">Expires At (exp)</div>
-              <div class="metric-value" style="font-size: 0.9rem;"><%= expiresAt %></div>
-              <div class="metric-detail">Token expiry time (UTC).</div>
+              <div class="metric-value"><%= expiresAt %></div>
             </div>
 
             <div class="metric-card">
               <div class="metric-label">Audience (aud)</div>
               <div class="metric-value"><%= audience %></div>
-              <div class="metric-detail">
-                Audience validation is currently disabled in the validator.
-              </div>
             </div>
 
             <div class="metric-card">
               <div class="metric-label">Rendered At (UTC)</div>
-              <div class="metric-value" style="font-size: 0.9rem;"><%= nowUtc %></div>
-              <div class="metric-detail">Timestamp generated on each request.</div>
+              <div class="metric-value"><%= nowUtc %></div>
             </div>
           </div>
 
           <p class="hint-line">
-            Raw token from <code>CF_Authorization</code> (useful for debugging key rotation and claims).
+            Raw <code>CF_Authorization</code> token used for verification.
           </p>
 
           <pre><%= token %></pre>
         </section>
 
+        <!-- RIGHT: CLAIMS + VERIFICATION DETAILS -->
         <aside class="card card-secondary">
-          <h2>Decoded claims</h2>
-          <p class="log-hint">
-            This is the verified payload attached to <code>req.userClaims</code>.
-          </p>
-
+          <h2>Decoded JWT claims</h2>
           <pre><%= JSON.stringify(claims, null, 2) %></pre>
 
-          <p class="hint-line" style="margin-top: 16px;">
-            Debug tips:
+          <h2>JWT verification details</h2>
+
+          <p class="log-hint">
+            JWKS URL used:
             <br />
-            <code>document.cookie</code> to confirm the cookie exists
-            <br />
-            Inject token via DevTools → Application → Cookies
+            <code><%= jwksUri %></code>
           </p>
+
+          <p class="log-hint">JWT Header</p>
+          <pre><%= jwtHeader ? JSON.stringify(jwtHeader, null, 2) : '—' %></pre>
+
+          <p class="log-hint">Public signing key (JWK)</p>
+          <pre><%= signingKey ? JSON.stringify(signingKey, null, 2) : '—' %></pre>
         </aside>
       </div>
     </main>

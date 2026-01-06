@@ -1,98 +1,38 @@
-const { jwtVerify, importJWK } = require('jose');
-
-function createInMemoryKeyCache({ ttlMs = 10 * 60 * 1000 } = {}) {
-  const store = new Map(); // kid -> { value: jwkObject, expiresAt: number }
-
-  return {
-    get(kid) {
-      const v = store.get(kid);
-      if (!v) return null;
-      if (Date.now() > v.expiresAt) {
-        store.delete(kid);
-        return null;
-      }
-      return v.value;
-    },
-    set(kid, jwkObject) {
-      store.set(kid, { value: jwkObject, expiresAt: Date.now() + ttlMs });
-    },
-    clear() {
-      store.clear();
-    },
-  };
-}
+const { jwtVerify, createRemoteJWKSet, jwksCache } = require('jose');
 
 function createCFAuthorizationJWTValidator(options) {
   const {
     jwksUri,
     issuer,
-    audience, // optional
+    audience, 
     algorithms = ['RS256'],
     fetchTimeoutMs = 5000,
     cacheTtlMs = 10 * 60 * 1000,
+    cooldownDurationMs = 30 * 1000, // helps prevent refetch abuse
   } = options || {};
 
   if (!jwksUri) throw new Error('createCFAuthorizationJWTValidator: jwksUri is required');
 
-  const cache = createInMemoryKeyCache({ ttlMs: cacheTtlMs });
+  // jose-managed remote JWKS resolver (handles caching + refresh/rotation)
+  const remoteJWKSet = createRemoteJWKSet(new URL(jwksUri), {
+    timeoutDuration: fetchTimeoutMs,
+    cacheMaxAge: cacheTtlMs,
+    cooldownDuration: cooldownDurationMs,
+    headers: { accept: 'application/json' },
+  });
 
-  async function fetchKeyFromJWKS(kid) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), fetchTimeoutMs);
-
+  /**
+   * Pull the raw JWK (object) from jose's internal JWKS cache
+   */
+  function getRawJwkFromRemoteCache(kid) {
     try {
-      const res = await fetch(jwksUri, {
-        method: 'GET',
-        headers: { accept: 'application/json' },
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        const err = new Error(`Error fetching JWKS: ${res.status}`);
-        err.code = 'JWKS_FETCH_FAILED';
-        throw err;
-      }
-
-      const jwks = await res.json();
-      const key = jwks?.keys?.find((k) => k.kid === kid);
-
-      if (!key || typeof key !== 'object') {
-        const err = new Error(`Key not found in JWKS for kid=${kid}`);
-        err.code = 'JWKS_KEY_NOT_FOUND';
-        throw err;
-      }
-
-      return key; //  raw JWK object
-    } catch (e) {
-      if (e?.name === 'AbortError') {
-        const err = new Error('JWKS fetch timeout');
-        err.code = 'JWKS_FETCH_TIMEOUT';
-        throw err;
-      }
-      throw e;
-    } finally {
-      clearTimeout(timeout);
+      const cache = remoteJWKSet[jwksCache];
+      const keys = cache?.jwks?.keys;
+      if (!Array.isArray(keys)) return null;
+      return keys.find((k) => k && k.kid === kid) || null;
+    } catch {
+      return null;
     }
-  }
-
-  /**
-   * Get RAW JWK (object) from cache or JWKS endpoint
-   */
-  async function getPublicJwkForKid(kid) {
-    const cached = cache.get(kid);
-    if (cached) return cached;
-
-    const jwk = await fetchKeyFromJWKS(kid);
-    cache.set(kid, jwk);
-    return jwk;
-  }
-
-  /**
-   * Get KeyLike (crypto key) for jose verification
-   */
-  async function getKeyLikeForKid(kid, headerAlg) {
-    const jwk = await getPublicJwkForKid(kid);
-    return importJWK(jwk, jwk.alg || headerAlg);
   }
 
   /**
@@ -105,43 +45,41 @@ function createCFAuthorizationJWTValidator(options) {
       throw err;
     }
 
-    let usedJwk; // raw JWK used
-
-    const { payload, protectedHeader } = await jwtVerify(
-      token,
-      async (header) => {
-        const kid = header?.kid;
-        if (!kid) {
-          const err = new Error('JWT header missing kid');
-          err.code = 'KID_MISSING';
-          throw err;
-        }
-
-        if (header?.alg && !algorithms.includes(header.alg)) {
-          const err = new Error(`Disallowed alg: ${header.alg}`);
-          err.code = 'ALG_NOT_ALLOWED';
-          throw err;
-        }
-
-        // fetch raw JWK for display + cache
-        usedJwk = await getPublicJwkForKid(kid);
-
-        // return KeyLike to jose 
-        return getKeyLikeForKid(kid, header.alg);
-      },
-      {
+    try {
+      const { payload, protectedHeader } = await jwtVerify(token, remoteJWKSet, {
         issuer: issuer || undefined,
-        ...(audience ? { audience } : {}), // optional
+        ...(audience ? { audience } : {}),
         algorithms,
-      }
-    );
+      });
 
-    return {
-      payload,
-      protectedHeader,
-      signingKey: usedJwk, // raw JWK object for your EJS page
-      jwksUri,
-    };
+      const signingKey = protectedHeader?.kid
+        ? getRawJwkFromRemoteCache(protectedHeader.kid)
+        : null;
+
+      return {
+        payload,
+        protectedHeader,
+        signingKey, // raw JWK object (best-effort)
+        jwksUri,
+      };
+    } catch (e) {
+      // If remote fetch fails, jose typically throws fetch / JWKS related errors.
+      // We keep your prior behavior: treat JWKS problems as 503.
+      const msg = String(e?.message || '');
+      const isLikelyJwksIssue =
+        msg.toLowerCase().includes('jwks') ||
+        msg.toLowerCase().includes('fetch') ||
+        msg.toLowerCase().includes('timeout') ||
+        msg.toLowerCase().includes('cooldown');
+
+      if (isLikelyJwksIssue) {
+        const err = new Error(e.message || 'JWKS unavailable');
+        err.code = 'JWKS_UNAVAILABLE';
+        throw err;
+      }
+
+      throw e;
+    }
   }
 
   function getCFAuthorizationFromRequest(req) {
@@ -157,13 +95,13 @@ function createCFAuthorizationJWTValidator(options) {
         const result = await validateJWT(token);
 
         req.userClaims = result.payload;
-        req.jwtHeader = result.protectedHeader;    
-        req.jwtSigningKey = result.signingKey;      
+        req.jwtHeader = result.protectedHeader;
+        req.jwtSigningKey = result.signingKey;
         req.jwksUri = result.jwksUri;
 
         return next();
       } catch (e) {
-        if (e?.code && String(e.code).startsWith('JWKS_')) {
+        if (e?.code === 'JWKS_UNAVAILABLE') {
           return res.status(503).json({ error: 'JWKS unavailable, retry later', detail: e.message });
         }
         return res.status(401).json({ error: 'Invalid token', detail: e.message });
@@ -175,7 +113,7 @@ function createCFAuthorizationJWTValidator(options) {
     validateJWT,
     getCFAuthorizationFromRequest,
     middleware,
-    _cache: cache,
+    _remoteJWKSet: remoteJWKSet,
   };
 }
 

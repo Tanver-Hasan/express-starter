@@ -9,12 +9,12 @@ dotenv.config();
 const port = process.env.PORT || 80;
 
 const app = express();
-app.use(cookieParser());
 
+app.use(cookieParser());
 const validator = createCFAuthorizationJWTValidator({
   jwksUri: process.env.CF_JWKS_URI || 'https://thasan.cloudflareaccess.com/cdn-cgi/access/certs',
   issuer: process.env.CF_JWT_ISSUER || "https://thasan.cloudflareaccess.com",     // recommended
-  // audience: process.env.CF_JWT_AUDIENCE, // recommended if you have it
+  audience: process.env.CF_JWT_AUDIENCE || "83fc9be602db641e15bd3a5dd3e229be29a2ba44b778892490cb82939c43129e", 
   algorithms: ['RS256'],
   fetchTimeoutMs: 5000,
   cacheTtlMs: 10 * 60 * 1000,
@@ -25,6 +25,15 @@ const validator = createCFAuthorizationJWTValidator({
 // View engine setup (EJS)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+app.get('/debug/headers', (req, res) => {
+  res.json({
+    cfAccessJwt: req.get('Cf-Access-Jwt-Assertion') || null,
+    cookiePresent: Boolean(req.cookies?.CF_Authorization),
+    headerNames: Object.keys(req.headers),
+  });
+});
+
 
 // Simple middleware for logging
 app.use((req, res, next) => {

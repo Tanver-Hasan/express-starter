@@ -4,16 +4,17 @@ function createCFAuthorizationJWTValidator(options) {
   const {
     jwksUri,
     issuer,
-    audience, 
+    audience,
     algorithms = ['RS256'],
     fetchTimeoutMs = 5000,
     cacheTtlMs = 10 * 60 * 1000,
-    cooldownDurationMs = 30 * 1000, // helps prevent refetch abuse
+    cooldownDurationMs = 30 * 1000,
+    // Cloudflare recommends validating the header instead of the cookie.
+    allowCookieFallback = true,
   } = options || {};
 
   if (!jwksUri) throw new Error('createCFAuthorizationJWTValidator: jwksUri is required');
 
-  // jose-managed remote JWKS resolver (handles caching + refresh/rotation)
   const remoteJWKSet = createRemoteJWKSet(new URL(jwksUri), {
     timeoutDuration: fetchTimeoutMs,
     cacheMaxAge: cacheTtlMs,
@@ -21,9 +22,6 @@ function createCFAuthorizationJWTValidator(options) {
     headers: { accept: 'application/json' },
   });
 
-  /**
-   * Pull the raw JWK (object) from jose's internal JWKS cache
-   */
   function getRawJwkFromRemoteCache(kid) {
     try {
       const cache = remoteJWKSet[jwksCache];
@@ -35,9 +33,6 @@ function createCFAuthorizationJWTValidator(options) {
     }
   }
 
-  /**
-   * Validate a JWT string (returns payload if valid).
-   */
   async function validateJWT(token) {
     if (!token || typeof token !== 'string') {
       const err = new Error('Missing token');
@@ -56,15 +51,8 @@ function createCFAuthorizationJWTValidator(options) {
         ? getRawJwkFromRemoteCache(protectedHeader.kid)
         : null;
 
-      return {
-        payload,
-        protectedHeader,
-        signingKey, // raw JWK object (best-effort)
-        jwksUri,
-      };
+      return { payload, protectedHeader, signingKey, jwksUri };
     } catch (e) {
-      // If remote fetch fails, jose typically throws fetch / JWKS related errors.
-      // We keep your prior behavior: treat JWKS problems as 503.
       const msg = String(e?.message || '');
       const isLikelyJwksIssue =
         msg.toLowerCase().includes('jwks') ||
@@ -82,15 +70,39 @@ function createCFAuthorizationJWTValidator(options) {
     }
   }
 
-  function getCFAuthorizationFromRequest(req) {
-    return req?.cookies?.CF_Authorization || null;
+  /**
+   * Prefer Cloudflare's injected header:
+   *   Cf-Access-Jwt-Assertion: <JWT>
+   *
+   * Fallback (optional):
+   *   Cookie: CF_Authorization=<JWT>
+   */
+  function getTokenFromRequest(req) {
+    // Express lowercases header names internally, but req.get() is case-insensitive.
+    const headerToken = req?.get?.('Cf-Access-Jwt-Assertion') || null;
+    if (headerToken && typeof headerToken === 'string') return headerToken.trim();
+
+    if (allowCookieFallback) {
+      const cookieToken = req?.cookies?.CF_Authorization || null;
+      if (cookieToken && typeof cookieToken === 'string') return cookieToken.trim();
+    }
+
+    return null;
   }
 
   function middleware() {
     return async (req, res, next) => {
       try {
-        const token = getCFAuthorizationFromRequest(req);
-        if (!token) return res.status(401).json({ error: 'Missing CF_Authorization cookie' });
+        const token = getTokenFromRequest(req);
+
+        if (!token) {
+          return res.status(401).json({
+            error: 'Missing Cloudflare Access token',
+            detail: allowCookieFallback
+              ? 'Expected Cf-Access-Jwt-Assertion header (preferred) or CF_Authorization cookie (fallback).'
+              : 'Expected Cf-Access-Jwt-Assertion header.',
+          });
+        }
 
         const result = await validateJWT(token);
 
@@ -98,6 +110,11 @@ function createCFAuthorizationJWTValidator(options) {
         req.jwtHeader = result.protectedHeader;
         req.jwtSigningKey = result.signingKey;
         req.jwksUri = result.jwksUri;
+
+        // Useful for debugging / audits
+        req.cfAccessTokenSource = req.get('Cf-Access-Jwt-Assertion')
+          ? 'header:Cf-Access-Jwt-Assertion'
+          : 'cookie:CF_Authorization';
 
         return next();
       } catch (e) {
@@ -111,7 +128,7 @@ function createCFAuthorizationJWTValidator(options) {
 
   return {
     validateJWT,
-    getCFAuthorizationFromRequest,
+    getTokenFromRequest, 
     middleware,
     _remoteJWKSet: remoteJWKSet,
   };

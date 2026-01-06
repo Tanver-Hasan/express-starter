@@ -13,7 +13,7 @@ const app = express();
 app.use(cookieParser());
 const validator = createCFAuthorizationJWTValidator({
   jwksUri: process.env.CF_JWKS_URI || 'https://thasan.cloudflareaccess.com/cdn-cgi/access/certs',
-  issuer: process.env.CF_JWT_ISSUER || "https://thasan.cloudflareaccess.com",     // recommended
+  issuer: process.env.CF_JWT_ISSUER || "https://thasan.cloudflareaccess.com",     
   audience: process.env.CF_JWT_AUDIENCE || "83fc9be602db641e15bd3a5dd3e229be29a2ba44b778892490cb82939c43129e", 
   algorithms: ['RS256'],
   fetchTimeoutMs: 5000,
@@ -27,10 +27,18 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.get('/debug/headers', (req, res) => {
+  const headersWithoutCookie = { ...req.headers };
+  delete headersWithoutCookie.cookie;
+
   res.json({
-    cfAccessJwt: req.get('Cf-Access-Jwt-Assertion') || null,
-    cookiePresent: Boolean(req.cookies?.CF_Authorization),
-    headerNames: Object.keys(req.headers),
+    cloudflareAccess: {
+      cfAccessJwtHeader: req.get('Cf-Access-Jwt-Assertion') || null,
+      cfAuthorizationCookie: req.cookies?.CF_Authorization || null,
+      hasCfAuthorizationCookie: Boolean(req.cookies?.CF_Authorization),
+    },
+    headers: headersWithoutCookie, // all headers except Cookie
+    rawCookieHeader: req.headers.cookie || null, // keep it separately if you want
+    cookies: req.cookies || {},
   });
 });
 

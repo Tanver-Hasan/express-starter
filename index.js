@@ -3,7 +3,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const { createCFAuthorizationJWTValidator } = require('./utils/validateJWT');
-
+const { createLogoutRoute } = require('./utils/logout');
 
 dotenv.config();
 const port = process.env.PORT || 80;
@@ -26,13 +26,21 @@ const validator = createCFAuthorizationJWTValidator({
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.get(
+  '/logout',
+  createLogoutRoute({
+    appDomain: 'https://tools.tanverhasan.com',
+    redirectAfter: '/', // homepage or login screen
+  })
+);
+
 app.get('/debug/headers', (req, res) => {
   const headersWithoutCookie = { ...req.headers };
   delete headersWithoutCookie.cookie;
 
   res.json({
     cloudflareAccess: {
-      cfAccessJwtHeader: req.get('Cf-Access-Jwt-Assertion') || null,
+      cfAccessJwtAssertionHeader: req.get('Cf-Access-Jwt-Assertion') || null,
       cfAuthorizationCookie: req.cookies?.CF_Authorization || null,
       hasCfAuthorizationCookie: Boolean(req.cookies?.CF_Authorization),
     },

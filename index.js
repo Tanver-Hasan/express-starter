@@ -9,7 +9,7 @@ dotenv.config();
 const port = process.env.PORT || 80;
 
 const app = express();
-
+app.set("trust proxy", true);
 app.use(cookieParser());
 const validator = createCFAuthorizationJWTValidator({
   jwksUri: process.env.CF_JWKS_URI || 'https://thasan.cloudflareaccess.com/cdn-cgi/access/certs',

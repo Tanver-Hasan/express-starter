@@ -1,4 +1,3 @@
-// logout.js (or routes/auth.js)
 
 function createLogoutRoute(options = {}) {
   const {

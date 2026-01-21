@@ -14,7 +14,7 @@ dotenv.config();
 
 const config = {
   // Prefer PORT (e.g., from the platform) then APP_PORT (Terraform), default to 3000.
-  port:3000,
+  port: process.env.PORT || 80,
   viewsPath: path.join(__dirname, 'views'),
   apiSpecPath: path.join(__dirname, './api/schema/openapi.yaml'),
   apiControllersPath: path.join(__dirname, './api/controllers'),

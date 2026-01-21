@@ -1,0 +1,194 @@
+openapi: 3.0.0
+info:
+  title: Sample Product API
+  description: API to test REST endpoints with validation and strict schema
+  version: 1.0.0
+servers:
+# The OpenAPI middleware is mounted at /api in index.js,
+# so declare the same base path here to keep the validator/router in sync.
+- url: /api
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                    example: Service is healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+      x-swagger-router-controller: Default
+  /products:
+    get:
+      summary: Retrieve all products
+      operationId: getAllProducts
+      responses:
+        "200":
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+                x-content-type: application/json
+      x-swagger-router-controller: Default
+    post:
+      summary: Create a new product
+      operationId: createProduct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+        required: true
+      responses:
+        "201":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+      x-swagger-router-controller: Default
+  /products/{productId}:
+    get:
+      summary: Retrieve a single product by ID
+      operationId: getProductById
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          minimum: 1
+          type: integer
+      responses:
+        "200":
+          description: A single product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+      x-swagger-router-controller: Default
+    put:
+      summary: Update an existing product
+      operationId: updateProduct
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          minimum: 1
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+        required: true
+      responses:
+        "200":
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+      x-swagger-router-controller: Default
+    delete:
+      summary: Delete a product
+      operationId: deleteProduct
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          minimum: 1
+          type: integer
+      responses:
+        "204":
+          description: Product deleted successfully
+      x-swagger-router-controller: Default
+components:
+  schemas:
+    Product:
+      required:
+      - id
+      - inStock
+      - name
+      - price
+      type: object
+      properties:
+        id:
+          minimum: 1
+          type: integer
+          example: 1
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+          example: Sample Product
+        description:
+          maxLength: 500
+          type: string
+          example: This is a sample product description.
+        price:
+          minimum: 0
+          type: number
+          format: float
+          example: 19.99
+        inStock:
+          type: boolean
+          example: true
+      description: A product in the catalog
+      example:
+        price: 19.99
+        name: Sample Product
+        description: This is a sample product description.
+        inStock: true
+        id: 1
+    ProductInput:
+      required:
+      - inStock
+      - name
+      - price
+      type: object
+      properties:
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+          example: Sample Product
+        description:
+          maxLength: 500
+          type: string
+          example: This is a sample product description.
+        price:
+          minimum: 0
+          type: number
+          format: float
+          example: 19.99
+        inStock:
+          type: boolean
+          example: true
+      description: Input schema for creating or updating a product

@@ -13,8 +13,6 @@ const { createLogoutRoute } = require('./utils/logout');
 dotenv.config();
 
 const config = {
-  // Prefer PORT (e.g., from the platform) then APP_PORT (Terraform), default to 3000.
-  port: process.env.PORT || 80,
   viewsPath: path.join(__dirname, 'views'),
   apiSpecPath: path.join(__dirname, './api/schema/openapi.yaml'),
   apiControllersPath: path.join(__dirname, './api/controllers'),
@@ -35,6 +33,8 @@ const app = express();
 app.set('trust proxy', true);
 app.set('view engine', 'ejs');
 app.set('views', config.viewsPath);
+// Prefer PORT (platform) then APP_PORT (Terraform), default to 80 (nginx upstream).
+app.set('port', Number(process.env.PORT || process.env.APP_PORT || 80));
 app.use(
   helmet({
     contentSecurityPolicy: false,

@@ -1,2 +1,9 @@
-// Entry point kept for backward compatibility; the server is defined in src/server.js
-require('./src/server');
+const app = require('./src/server');
+
+const port = app.get('port');
+
+app.listen(port, () => {
+  app.log?.info
+    ? app.log.info({ port }, 'Server listening (index.js)')
+    : console.log(`Server listening on port ${port}`);
+});

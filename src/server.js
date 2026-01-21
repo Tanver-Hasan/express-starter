@@ -13,7 +13,8 @@ const { createLogoutRoute } = require('./utils/logout');
 dotenv.config();
 
 const config = {
-  port: Number(process.env.PORT) || 80,
+  // Prefer PORT (e.g., from the platform) then APP_PORT (Terraform), default to 3000.
+  port: Number(process.env.PORT || process.env.APP_PORT) || 3000,
   viewsPath: path.join(__dirname, 'views'),
   apiSpecPath: path.join(__dirname, './api/schema/openapi.yaml'),
   apiControllersPath: path.join(__dirname, './api/controllers'),

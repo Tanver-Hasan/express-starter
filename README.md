@@ -19,3 +19,8 @@
 
 - `npm start` – Run the server
 - `npm run dev` – (Requires nodemon) auto-restarts on changes
+
+## Ports
+
+- The app listens on `PORT` if set, otherwise `APP_PORT` (Terraform default 3000), falling back to 3000.
+- It is expected to be proxied by Nginx; configure Nginx to forward to this upstream port.

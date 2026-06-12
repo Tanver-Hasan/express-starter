@@ -167,8 +167,9 @@ app.use((req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(config.port, () => {
-    app.log?.info ? app.log.info({ port: config.port }, 'Server listening') : console.log(`Example app listening on port ${config.port}`);
+  const port = app.get('port');
+  app.listen(port, () => {
+    app.log?.info ? app.log.info({ port }, 'Server listening') : console.log(`Example app listening on port ${port}`);
   });
 }
 

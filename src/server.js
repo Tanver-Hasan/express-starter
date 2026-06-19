@@ -33,8 +33,8 @@ const app = express();
 app.set('trust proxy', true);
 app.set('view engine', 'ejs');
 app.set('views', config.viewsPath);
-// Prefer PORT (platform) then APP_PORT (Terraform), default to 80 (nginx upstream).
-app.set('port', Number(process.env.PORT || process.env.APP_PORT || 80));
+// Prefer PORT (platform) then APP_PORT (Terraform), default to 3000 (nginx proxies :80 -> :3000).
+app.set('port', Number(process.env.PORT || process.env.APP_PORT || 3000));
 app.use(
   helmet({
     contentSecurityPolicy: false,
